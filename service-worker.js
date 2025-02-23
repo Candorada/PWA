@@ -1,9 +1,9 @@
 const CACHE_NAME = "math-grapher-cache-v1";
 const CACHE_ASSETS = [
-    "/",
-    "/index.html",
-    "/manifest.json",
-    "/icon.png"
+    "/PWA",
+    "/PWA/index.html",
+    "/PWA/manifest.json",
+    "/PWA/icon.png"
   ];
 
 self.addEventListener("install", function (event) {
