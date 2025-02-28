@@ -78,13 +78,26 @@
             height: calc(100% + env(safe-area-inset-top)*2);
             position:absolute;
             height: 100%;
+            width: 100%;
             top:0px;
             left:0px;
+        }
+        canvas{
+            height: 100vh;
+            width: 100%;
+            position: absolute;
+            top:0px;
+            left:0px;
+        }
+        #pip{
+            opacity: 0;
         }
 </style>
 <body>
     <div class="absolute">
-        <canvas id = "canvas"></canvas>
+    <canvas id = "background"></canvas>
+    <canvas id = "canvas"></canvas>
+    <video id = "pip"></video>
     <div id = "slider" style="--pixel:50%">
         <div class = "button"></div>
         <div class = "statusBar"></div>
@@ -135,12 +148,16 @@ updateSlider()
     values[valueChanging] = sliderValue*(sliderRange[1]-sliderRange[0])+sliderRange[0]
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+    const background = document.getElementById("background");
+    const bctx = background.getContext("2d");
     function draw(){
-        canvas.style = "display:block;width:100%;height:100%;"
-        canvas.width = window.innerWidth*2;
-        canvas.height = window.innerHeight*2;
-        ctx.fillStyle =  "#000000";
-        ctx.fillRect(0,0,canvas.width,canvas.height);
+        if(canvas.width != window.innerWidth*2||canvas.height != window.innerHeight*2){
+            canvas.width = window.innerWidth*2;
+            canvas.height = window.innerHeight*2;
+        }
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        bctx.fillStyle =  "#000000";
+        bctx.fillRect(0,0,canvas.width,canvas.height);
         drawCenterLines = ()=>{
             ctx.strokeStyle = style.centerLine.clr;
             ctx.lineWidth = style.centerLine.width;
@@ -289,6 +306,7 @@ updateSlider()
       */  
     let inverse = false;
     function frameAnimation(){
+            requestAnimationFrame(frameAnimation)
             sliderValue = sliderValue+(inverse?-0.03:0.03)
             if(sliderValue>1||sliderValue<0){
                 inverse = !inverse;
@@ -298,12 +316,20 @@ updateSlider()
             updateSlider()
             let value = sliderValue*(sliderRange[1]-sliderRange[0])+sliderRange[0]
             values[valueChanging] = value
-            draw()
+            draw();
 
     }
     let startX, startY, isDragging = false;
     let totalDrag = [0,0];
+    let lastTouch = Date.now();
+    
     document.addEventListener("touchstart", (e) => {
+        if(Date.now()-lastTouch<300){
+            pip.srcObject = canvas.captureStream();
+            pip.play();
+            pip.requestPictureInPicture()
+        }
+        lastTouch = Date.now();
         const touch = e.touches[0];
         startX = touch.clientX;
         startY = touch.clientY;
@@ -317,7 +343,6 @@ updateSlider()
 
     totalDrag[0] += dx;
     totalDrag[1] += dy;
-
     startX = touch.clientX;
     startY = touch.clientY;
     console.log("Dragging", dx, dy);
@@ -332,11 +357,14 @@ updateSlider()
             console.log("Drag ended");
         }
     });
-    setInterval(frameAnimation, 30);
-    draw();
+    requestAnimationFrame(frameAnimation)
 </script>
 <script>
     //this is the PWA code
+    slider.onclick = ()=>{
+        pip.srcObject = canvas.captureStream();
+        pip.onloadedmetadata = () => {pip.play();pip.requestPictureInPicture()}
+    }
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js')
 </script>
 </html>
